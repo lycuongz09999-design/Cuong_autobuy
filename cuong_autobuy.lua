@@ -8,17 +8,7 @@ local Window = MakeWindow({
         Animation = "Cường mê gái vó tu script"
     },
     Key = {
-        KeySystem = false,
-        Title = "Key System",
-        Description = "",
-        KeyLink = "",
-        Keys = {"1234"},
-        Notifi = {
-            Notifications = true,
-            CorrectKey = "Running the Script...",
-            Incorrectkey = "The key is incorrect",
-            CopyKeyLink = "Copied to Clipboard"
-        }
+        KeySystem = false
     }
 })
 
@@ -27,9 +17,7 @@ MinimizeButton({
     Image = "http://www.roblox.com/asset/?id=72939512240078",
     Size = {60, 60},
     Color = Color3.fromRGB(10, 10, 10),
-    Corner = true,
-    Stroke = false,
-    StrokeColor = Color3.fromRGB(255, 0, 0)
+    Corner = true
 })
 
 -- 🟢 Tạo Tab AutoBuy
@@ -39,9 +27,26 @@ local Tab1 = MakeTab({
     Color = Color3.fromRGB(255, 100, 100)
 })
 
+-- 🟢 RemoteEvents (Grow a Garden dùng Remotes folder)
+local RS = game:GetService("ReplicatedStorage")
+local Remotes = RS:WaitForChild("Remotes")
+
+local buySeedEvent = Remotes:WaitForChild("BuySeedEvent")
+local buyGearEvent = Remotes:WaitForChild("BuyGearEvent")
+
 -- Danh sách Seeds và Gears
 local seeds = {"Wheat", "Corn", "Carrot", "Tomato", "Potato", "Pumpkin", "Strawberry"}
 local gears = {"Hoe", "WateringCan", "Shovel", "Scythe", "Bucket"}
+
+-- 🟢 Hàm tạo vòng lặp AutoBuy
+local function startLoop(flagName, delay, callback)
+    task.spawn(function()
+        while _G[flagName] do
+            task.wait(delay)
+            pcall(callback)
+        end
+    end)
+end
 
 -- 🟢 Từng toggle Seed
 for _, seed in ipairs(seeds) do
@@ -50,9 +55,10 @@ for _, seed in ipairs(seeds) do
         Default = false,
         Callback = function(value)
             _G["AutoBuy"..seed] = value
-            while _G["AutoBuy"..seed] do
-                task.wait(1)
-                game:GetService("ReplicatedStorage").BuySeedEvent:FireServer(seed)
+            if value then
+                startLoop("AutoBuy"..seed, 1, function()
+                    buySeedEvent:FireServer(seed)
+                end)
             end
         end
     })
@@ -65,9 +71,10 @@ for _, gear in ipairs(gears) do
         Default = false,
         Callback = function(value)
             _G["AutoBuy"..gear] = value
-            while _G["AutoBuy"..gear] do
-                task.wait(2)
-                game:GetService("ReplicatedStorage").BuyGearEvent:FireServer(gear)
+            if value then
+                startLoop("AutoBuy"..gear, 2, function()
+                    buyGearEvent:FireServer(gear)
+                end)
             end
         end
     })
@@ -79,11 +86,12 @@ AddToggle(Tab1, {
     Default = false,
     Callback = function(value)
         _G.AutoBuyAllSeeds = value
-        while _G.AutoBuyAllSeeds do
-            task.wait(1)
-            for _, seed in ipairs(seeds) do
-                game:GetService("ReplicatedStorage").BuySeedEvent:FireServer(seed)
-            end
+        if value then
+            startLoop("AutoBuyAllSeeds", 1, function()
+                for _, seed in ipairs(seeds) do
+                    buySeedEvent:FireServer(seed)
+                end
+            end)
         end
     end
 })
@@ -94,11 +102,12 @@ AddToggle(Tab1, {
     Default = false,
     Callback = function(value)
         _G.AutoBuyAllGears = value
-        while _G.AutoBuyAllGears do
-            task.wait(2)
-            for _, gear in ipairs(gears) do
-                game:GetService("ReplicatedStorage").BuyGearEvent:FireServer(gear)
-            end
+        if value then
+            startLoop("AutoBuyAllGears", 2, function()
+                for _, gear in ipairs(gears) do
+                    buyGearEvent:FireServer(gear)
+                end
+            end)
         end
     end
 })
